@@ -60,16 +60,20 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
     def addme_command(self, message=None):
         sender = message.sender.split('/')[0]
-        user_name, password = message.arg.split('##')
-        client = PlayNicely(username = user_name, password = password)
-        try :
-            current = client.users.show("current")
-        except AuthenticationError as e:
-            message.reply("Authentication failure, please try again ")
+        try:
+            user_name, password = message.arg.split('##')
+        except ValueError:
+            message.reply("Incorrect format. Expected : \n/addme username##password")
         else :
-            user = User(key_name=sender, user_name=user_name, password=password)
-            user.put()
-            message.reply("Added successfully!")
+            client = PlayNicely(username = user_name, password = password)
+            try :
+                current = client.users.show("current")
+            except AuthenticationError as e:
+                message.reply("Authentication failure, please try again ")
+            else :
+                user = User(key_name=sender, user_name=user_name, password=password)
+                user.put()
+                message.reply("Added successfully!")
 
     def check_command(self, message=None):
         try :
@@ -77,7 +81,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         except UnknownUserError:
             message.reply(UNKNOWN_USER_MSG)
         else :
-            message.reply(user.user_name + ":" + user.password)
+            message.reply(user.user_name + "##" + user.password)
 
     def text_message(self, message=None):
         user = message.sender
