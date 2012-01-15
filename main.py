@@ -20,10 +20,15 @@ from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp import xmpp_handlers
 from google.appengine.ext.webapp.util import run_wsgi_app
 from playnicely.client import PlayNicely
+from playnicely import AuthenticationError
 
 HELP_MSG = ("/addme username##password \n"
             "/check \n"
             "/create newTask")
+UNKNOWN_USER_MSG = "Do I know you? Please introduce yourself using /addme username##password"
+
+class UnknownUserError(Exception):
+    pass
 
 class User(db.Model):
     user_name = db.TextProperty(required=True)
@@ -34,30 +39,45 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         sender = sender.split('/')[0]
         user_k = db.Key.from_path('User',sender)
         user = db.get(user_k)
+        if user == None : raise UnknownUserError
         return user
 
     def create_command(self, message=None):
-        user = self._GetUser(message.sender)
-        text = message.arg
-        client = PlayNicely(username = user.user_name, password = user.password)
-        user_id = client.users.show("current").user_id
-        project_id = client.users.list_projects("current")[0].project_id
-        milestone_id = client.milestones.list(project_id)[0].milestone_id
-        item = client.items.create(project_id = project_id, subject=text, body="test body", responsible=user_id, involved=[user_id], status="new",
-            type_name="task", milestone_id=milestone_id)
-        message.reply("Task " + str(item["item_id"]) + " created")
+        try :
+            user = self._GetUser(message.sender)
+        except UnknownUserError:
+            message.reply(UNKNOWN_USER_MSG)
+        else :
+            text = message.arg
+            client = PlayNicely(username = user.user_name, password = user.password)
+            user_id = client.users.show("current").user_id
+            project_id = client.users.list_projects("current")[0].project_id
+            milestone_id = client.milestones.list(project_id)[0].milestone_id
+            item = client.items.create(project_id = project_id, subject=text, body="test body", responsible=user_id, involved=[user_id], status="new",
+                type_name="task", milestone_id=milestone_id)
+            message.reply("Task " + str(item["item_id"]) + " created")
 
 
     def addme_command(self, message=None):
         sender = message.sender.split('/')[0]
         user_name, password = message.arg.split('##')
-        user = User(key_name=sender, user_name=user_name, password=password)
-        user.put()
-        message.reply("Added successfully!")
+        client = PlayNicely(username = user_name, password = password)
+        try :
+            current = client.users.show("current")
+        except AuthenticationError as e:
+            message.reply("Authentication failure, please try again ")
+        else :
+            user = User(key_name=sender, user_name=user_name, password=password)
+            user.put()
+            message.reply("Added successfully!")
 
     def check_command(self, message=None):
-        user = self._GetUser(message.sender)
-        message.reply(user.user_name + ":" + user.password)
+        try :
+            user = self._GetUser(message.sender)
+        except UnknownUserError:
+            message.reply(UNKNOWN_USER_MSG)
+        else :
+            message.reply(user.user_name + ":" + user.password)
 
     def text_message(self, message=None):
         user = message.sender
@@ -70,7 +90,6 @@ def main():
         ('/_ah/xmpp/message/chat/', XmppHandler),
         ], debug=True)
     run_wsgi_app(application)
-
 
 if __name__ == '__main__':
     main()

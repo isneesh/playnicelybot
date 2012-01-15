@@ -14,16 +14,14 @@ class BaseError(Exception):
     def __init__(self, e):
         super(BaseError, self).__init__()
         self.code = e.code
-        data = e.read()
-        if len(data) > 0:
-            try:
+        try:
+            data = e.read()
+            if len(data) > 0:
                 json = simplejson.loads(data)
                 self.args = (json["error_message"],)
                 self.type = json["type"]
-            except ValueError:
-                pass
-                
-    
+        except (ValueError, AttributeError):
+            pass
 
 class ApiError(BaseError):
     pass
