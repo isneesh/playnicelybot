@@ -21,7 +21,7 @@ from google.appengine.ext.webapp import xmpp_handlers
 from google.appengine.ext.webapp.util import run_wsgi_app
 from playnicely.client import PlayNicely
 
-HELP_MSG = ("/addme username password \n"
+HELP_MSG = ("/addme username##password \n"
             "/check \n"
             "/create newTask")
 
@@ -50,7 +50,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
     def addme_command(self, message=None):
         sender = message.sender.split('/')[0]
-        user_name, password = message.arg.split(' ')
+        user_name, password = message.arg.split('##')
         user = User(key_name=sender, user_name=user_name, password=password)
         user.put()
         message.reply("Added successfully!")
