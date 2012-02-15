@@ -51,10 +51,8 @@ class XmppHandler(xmpp_handlers.CommandHandler):
             text = message.arg
             client = PlayNicely(username = user.user_name, password = user.password)
             user_id = client.users.show("current").user_id
-            project_id = client.users.list_projects("current")[0].project_id
-            milestone_id = client.milestones.list(project_id)[0].milestone_id
-            item = client.items.create(project_id = project_id, subject=text, body="test body", responsible=user_id, involved=[user_id], status="new",
-                type_name="task", milestone_id=milestone_id)
+            item = client.items.create(project_id = 2512, subject=text, body="", responsible=1991, involved=[user_id, 1991], status="new",
+                type_name="task", milestone_id=3)
             message.reply("Task " + str(item["item_id"]) + " created")
 
 
