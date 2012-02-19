@@ -24,6 +24,7 @@ from playnicely import AuthenticationError
 
 HELP_MSG = ("/addme username##password \n"
             "/check \n"
+            "/reportbug newBug\n"
             "/create newTask")
 UNKNOWN_USER_MSG = "Do I know you? Please introduce yourself using /addme username##password"
 
@@ -42,6 +43,19 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         if user == None : raise UnknownUserError
         return user
 
+    def reportbug_command(self, message=None):
+        try :
+            user = self._GetUser(message.sender)
+        except UnknownUserError:
+            message.reply(UNKNOWN_USER_MSG)
+        else :
+            text = message.arg
+            client = PlayNicely(username = user.user_name, password = user.password)
+            user_id = client.users.show("current").user_id
+            item = client.items.create(project_id = 2512, subject=text, body="", responsible=1991, involved=[user_id, 1997, 1991], status="new",
+                type_name="bug", milestone_id=3)
+            message.reply("Task " + str(item["item_id"]) + " created")
+
     def create_command(self, message=None):
         try :
             user = self._GetUser(message.sender)
@@ -51,7 +65,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
             text = message.arg
             client = PlayNicely(username = user.user_name, password = user.password)
             user_id = client.users.show("current").user_id
-            item = client.items.create(project_id = 2512, subject=text, body="", responsible=1991, involved=[user_id, 1991], status="new",
+            item = client.items.create(project_id = 2512, subject=text, body="", responsible=1991, involved=[user_id, 1997, 1991], status="new",
                 type_name="task", milestone_id=3)
             message.reply("Task " + str(item["item_id"]) + " created")
 
